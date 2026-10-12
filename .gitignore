@@ -1,0 +1,11 @@
+data/
+build/
+dist/
+updatetest/
+__pycache__/
+*.pyc
+*_progress.txt
+test_progress*.txt
+test_err*.txt
+*.png
+Toss.exe
