@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toss 快抛 — 局域网互传</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="logo">
+      <div class="logo-icon">T</div>
+      <div>
+        <div class="logo-title">Toss 快抛</div>
+        <div class="logo-sub">WiFi 局域网互传 · 不走云</div>
+      </div>
+    </div>
+    <div class="head-right">
+      <button class="chip ver-chip" id="verChip" title="当前版本">v…</button>
+      <button class="chip" id="selfAddr" title="点击复制本机地址，发到对方电脑打开">📍 本机地址加载中…</button>
+      <button class="chip ghost" id="btnPeer">↔ 对方 Toss</button>
+      <button class="chip ghost" id="btnSettings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- 一键更新横条 -->
+  <div class="upd-banner" id="updBanner" style="display:none">
+    <span>🎉 发现新版本 v<span id="updBannerVer"></span>，可以直接一键更新</span>
+    <button class="btn small primary" id="btnApplyUpdate">⚡ 一键更新</button>
+  </div>
+
+  <!-- 登录门 -->
+  <div class="mask" id="loginMask" style="display:none">
+    <div class="login-card">
+      <h2>🔒 Toss 已设访问口令</h2>
+      <p class="hint">这台实例开了口令保护，输入后进入</p>
+      <input id="loginPw" class="input" type="password" placeholder="访问口令" autofocus>
+      <button class="btn primary" id="btnLogin">进入</button>
+      <p class="hint" id="loginErr" style="color:var(--danger)"></p>
+    </div>
+  </div>
+
+  <!-- 发送区 -->
+  <section class="card compose">
+    <div class="tabs">
+      <button class="tab active" data-tab="text">📝 文本</button>
+      <button class="tab" data-tab="file">📎 文件 / 图片</button>
+    </div>
+    <div id="paneText" class="pane">
+      <textarea id="textContent" class="input ta" rows="5" placeholder="粘贴或输入要传的文本…Ctrl+Enter 直接发（剪贴板是截图时直接 Ctrl+V 即上传）"></textarea>
+      <div class="row">
+        <button class="btn primary" id="btnSendText">🚀 发送文本</button>
+        <button class="btn ghost" id="btnPaste">📋 粘贴剪贴板并填入</button>
+      </div>
+    </div>
+    <div id="paneFile" class="pane" style="display:none">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-main">把文件 / 图片拖到这里</div>
+        <div class="dz-sub">或点击选择 · Ctrl+V 直接粘贴截图 · 支持多选 · 单文件建议 ≤ 500MB</div>
+        <input type="file" id="fileInput" multiple style="display:none">
+      </div>
+      <div class="row"><span class="upload-status" id="uploadStatus"></span></div>
+    </div>
+  </section>
+
+  <!-- 记录区 -->
+  <section class="card">
+    <div class="list-head">
+      <span class="list-title" id="listTitle">📦 传输记录</span>
+      <span class="list-head-right">
+        <span class="list-meta" id="listMeta"></span>
+        <button class="btn small danger" id="btnEmptyTrash" style="display:none">清空回收站</button>
+        <button class="btn small ghost" id="btnTrashView">🗑 回收站</button>
+      </span>
+    </div>
+    <div id="itemList" class="item-list"><div class="empty">还没有记录</div></div>
+  </section>
+
+  <footer class="foot">条目保留 <span id="retentionFoot">…</span> 天自动清理 · 本机数据目录：data/ · Toss v<span id="ver">…</span></footer>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="mask" id="setMask" style="display:none">
+  <div class="login-card">
+    <h2>⚙️ 设置</h2>
+    <label class="field"><span>对方 Toss 地址（保存后头部一键打开）</span>
+      <input id="peerUrl" class="input" placeholder="http://device-name:8400"></label>
+    <div class="row"><button class="btn primary" id="btnSavePeer">保存对方地址</button></div>
+    <hr class="sep">
+    <p class="hint">自动清理：传输记录（含回收站）超过设定天数会自动删除。改动立即生效，无需重启。</p>
+    <label class="field"><span>记录保留天数（1~90）</span>
+      <input id="retentionInput" class="input" type="number" min="1" max="90" placeholder="30"></label>
+    <div class="row"><button class="btn primary" id="btnSaveRetention">💾 保存保留期</button></div>
+    <p class="hint" id="retMsg"></p>
+    <hr class="sep">
+    <p class="hint">访问口令：局域网里别人也能扫到这个端口，建议设一个。清空=关闭登录门。</p>
+    <label class="field"><span>旧口令（未设过留空）</span><input id="oldPw" class="input" type="password"></label>
+    <label class="field"><span>新口令（至少 4 位）</span><input id="newPw" class="input" type="password"></label>
+    <div class="row">
+      <button class="btn primary" id="btnSetPw">💾 保存口令</button>
+      <button class="btn ghost" id="btnClearPw">🔓 清除口令</button>
+    </div>
+    <p class="hint" id="pwMsg"></p>
+    <hr class="sep">
+    <div class="row"><button class="btn danger" id="btnLogout">🚪 退出登录</button></div>
+    <p class="hint" id="infoLine"></p>
+  </div>
+</div>
+
+<!-- 更新说明弹窗（升级后自动弹；点版本徽章随时回看） -->
+<div class="mask" id="updMask" style="display:none">
+  <div class="login-card">
+    <h2 id="updTitle">📜 更新说明</h2>
+    <p class="hint" id="updHint">全部版本（新 → 旧）：</p>
+    <div id="updList"></div>
+    <div class="row"><button class="btn primary" id="btnUpdOk">知道了</button></div>
+  </div>
+</div>
+
+<!-- 备注 / 重命名弹窗（v0.1.6） -->
+<div class="mask" id="memoMask" style="display:none">
+  <div class="login-card">
+    <h2>✏️ 备注 / 重命名</h2>
+    <p class="hint">给这条记录加一句备注（例如「最新版UI草稿」），列表会优先用备注名显示，原名保留在下方。留空并保存即清除备注。</p>
+    <label class="field"><span>备注文字（最多 200 字）</span>
+      <input id="memoInput" class="input" maxlength="200" placeholder="例如：最新版UI草稿"></label>
+    <div class="row">
+      <button class="btn primary" id="btnMemoSave">💾 保存</button>
+      <button class="btn ghost" id="btnMemoClear">清除备注</button>
+      <button class="btn ghost" id="btnMemoCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" class="toast-box"></div>
+<script src="app.js"></script>
+</body>
+</html>
